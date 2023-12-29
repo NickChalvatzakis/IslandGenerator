@@ -1,0 +1,34 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{944A85AF-4B69-5C1E-9BC3-3D86DB72012B}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "PirateGame",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Blutility"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "MotionSymphony",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/0c2538101593418b8818585d2a97aacb"
+		},
+		{
+			"Name": "IslandGenerator",
+			"Enabled": false
+		}
+	]
+}
