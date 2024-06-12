@@ -2,8 +2,13 @@
 
 
 #include "EUW_NoiseGenerator.h"
-#include "SimplexNoiseBPLibrary.h"
 
+#include "ImageWriteBlueprintLibrary.h"
+#include "SimplexNoiseBPLibrary.h"
+#include "ImageUtils.h"
+
+
+class UKismetRenderingLibrary;
 /*
  * https://old.reddit.com/r/proceduralgeneration/comments/kaen7h/new_video_on_procedural_island_noise_generation/gfjmgen/
  * https://www.redblobgames.com/maps/terrain-from-noise/
@@ -37,7 +42,7 @@ void UEUW_NoiseGenerator::GenerateNoise(float Frequency, float Amplitude, float 
 	const int32 Width = 600;
 	const int32 Height = 600;
 
-	Out = UTexture2D::CreateTransient(Width, Height, PF_DXT1);
+	Out = NewObject<UTexture2D>(UTexture2D::StaticClass());
 
 	Out->Source.Init(Width, Height, /*NumSlices=*/ 1, /*NumMips=*/ 1, TSF_BGRA8);
 
@@ -51,9 +56,9 @@ void UEUW_NoiseGenerator::GenerateNoise(float Frequency, float Amplitude, float 
 			const float Noise = USimplexNoiseBPLibrary::GetSimplexNoise2D(x, y, Frequency, Amplitude,
 			                                                              Lacunarity, Octaves, Width, Height, WaterLevel);
 
-			const float Island = USimplexNoiseBPLibrary::GetIslandMask(x, y, Width, Height, Noise);
+			//const float Island = USimplexNoiseBPLibrary::GetIslandMask(x, y, Width, Height, Noise);
 
-			const FColor CurrentColor = GetColorBasedOnHeight(Island);
+			const FColor CurrentColor = GetColorBasedOnHeight(Noise);
 			*DestPtr++ = CurrentColor.B;
 			*DestPtr++ = CurrentColor.G;
 			*DestPtr++ = CurrentColor.R;
@@ -63,6 +68,9 @@ void UEUW_NoiseGenerator::GenerateNoise(float Frequency, float Amplitude, float 
 	}
 
 	Out->Source.UnlockMip(0);
+	Out->CompressionSettings = TextureCompressionSettings::TC_EditorIcon;
+	Out->SRGB = true;
+	Out->CompressionNoAlpha = false;
 
 	Out->PostEditChange();
 
@@ -70,10 +78,50 @@ void UEUW_NoiseGenerator::GenerateNoise(float Frequency, float Amplitude, float 
 #else
 	UE_LOG(LogImageUtils, Fatal,TEXT("ConstructTexture2D not supported on console."));
 #endif
+}
 
-	
+void UEUW_NoiseGenerator::GenerateGrayscale(float Frequency, float Amplitude, float Lacunarity, float Octaves,
+	UTexture2D*& Out)
+{
+	#if WITH_EDITOR
+	const int32 Width = 600;
+	const int32 Height = 600;
 
+	Out = NewObject<UTexture2D>(UTexture2D::StaticClass());
 
+	Out->Source.Init(Width, Height, /*NumSlices=*/ 1, /*NumMips=*/ 1, TSF_G8);
+
+	uint8* MipData = Out->Source.LockMip(0);
+
+	for (int32 y = 0; y < Width; y++ )
+	{
+		uint8* DestPtr = &MipData[(Height - 1 - y) * Width * sizeof(FColor)];
+		for (int32 x = 0; x < Height; x++ )
+		{
+			const float Noise = USimplexNoiseBPLibrary::GetSimplexNoise2D(x, y, Frequency, Amplitude,
+			                                                              Lacunarity, Octaves, Width, Height, WaterLevel);
+
+			const float Island = USimplexNoiseBPLibrary::GetIslandMask(x, y, Width, Height, Noise);
+
+			*DestPtr++ = Island;
+			*DestPtr++ = Island;
+			*DestPtr++ = Island;
+			*DestPtr++ = Island;
+
+		}
+	}
+
+	Out->Source.UnlockMip(0);
+	Out->CompressionSettings = TextureCompressionSettings::TC_Grayscale;
+	Out->SRGB = true;
+	Out->CompressionNoAlpha = false;
+
+	Out->PostEditChange();
+
+	Out->UpdateResource();
+#else
+	UE_LOG(LogImageUtils, Fatal,TEXT("ConstructTexture2D not supported on console."));
+#endif
 }
 
 void UEUW_NoiseGenerator::GetImageFromTexture(UTexture2D* Texture, UImage* Image)
@@ -90,4 +138,24 @@ void UEUW_NoiseGenerator::GetTextureFromImage(UTexture2D*& Texture, UImage* Imag
 	Texture->CreateTransient(Image->GetBrush().GetImageSize().X, Image->GetBrush().GetImageSize().Y,
 	                         EPixelFormat::PF_DXT1, FName(TEXT("Texture")));
 }
+
+void UEUW_NoiseGenerator::ExportTexture(FString Name, FString Path, EDesiredImageFormat ImageFormat, UTexture2D* Texture)
+{
+
+	if(Path.IsEmpty()) Path = FPaths::GameDevelopersDir();
+	if(Name.IsEmpty()) Name = L"Island";
+	const FString ImageFileName = Path / Name + TEXT(".png");
+
+	FImageWriteOptions WriteOptions;
+	WriteOptions.Format = ImageFormat;
+	WriteOptions.bOverwriteFile = true;
+	WriteOptions.bAsync = true;
+	WriteOptions.CompressionQuality = 0;
+
+	UE_LOG(LogTemp, Warning, TEXT("FileName %s"), *ImageFileName);
+
+	UImageWriteBlueprintLibrary::ExportToDisk(Texture, *ImageFileName, WriteOptions);
+
+}
+
 

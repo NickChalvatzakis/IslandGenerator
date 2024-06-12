@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EditorUtilityWidget.h"
+#include "ImageWriteTypes.h"
 #include "Components/Image.h"
 #include "EUW_NoiseGenerator.generated.h"
 
@@ -52,11 +53,14 @@ private:
 	FColor GetColorBasedOnHeight(float Height);
 
 public:
-	float GenerateMask(int32 x, int32 y, int32 Width, int32 Height, float Noise, float Threshold, EDistanceFunctionType Type);
 	UFUNCTION(BlueprintCallable)
 	void GenerateNoise(float Frequency, float Amplitude, float Lacunarity, float Octaves, UTexture2D*& Out);
+	UFUNCTION(BlueprintCallable)
+	void GenerateGrayscale(float Frequency, float Amplitude, float Lacunarity, float Octaves, UTexture2D*& Out);
 	UFUNCTION(BlueprintCallable)
 	void GetImageFromTexture(UTexture2D* Texture, UImage* Image);
 	UFUNCTION(BlueprintCallable)
 	void GetTextureFromImage(UTexture2D*& Texture, UImage* Image);
+	UFUNCTION(BlueprintCallable)
+	void ExportTexture(FString Name, FString Path, EDesiredImageFormat ImageFormat, UTexture2D* Texture);
 };
