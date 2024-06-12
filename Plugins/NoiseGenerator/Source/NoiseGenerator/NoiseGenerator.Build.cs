@@ -47,7 +47,7 @@ public class NoiseGenerator : ModuleRules
 				"Blutility",
 				"UMG",
 				"UMGEditor",
-				"SimplexNoise"
+				"SimplexNoise", "ImageWriteQueue"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
